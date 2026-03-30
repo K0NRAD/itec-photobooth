@@ -106,8 +106,8 @@ export function drawOuterBorder(ctx, width, height, { theme, themeIntensity }) {
 
 // ─── Caption ──────────────────────────────────────────────────────────────────
 
-export function drawCaption(ctx, width, height, { caption, dateOn, theme }) {
-  const parts = buildCaptionParts(caption, dateOn);
+export function drawCaption(ctx, width, height, { caption, theme }) {
+  const parts = buildCaptionParts(caption);
   if (!parts.length) return;
 
   const { ink } = themePalette(theme);
@@ -119,8 +119,8 @@ export function drawCaption(ctx, width, height, { caption, dateOn, theme }) {
   ctx.restore();
 }
 
-export function drawCaptionAt(ctx, x, y, { caption, dateOn, theme }) {
-  const parts = buildCaptionParts(caption, dateOn);
+export function drawCaptionAt(ctx, x, y, { caption, theme }) {
+  const parts = buildCaptionParts(caption);
   if (!parts.length) return;
 
   const { ink } = themePalette(theme);
@@ -132,14 +132,13 @@ export function drawCaptionAt(ctx, x, y, { caption, dateOn, theme }) {
   ctx.restore();
 }
 
-export function hasCaption({ caption, dateOn }) {
-  return !!(caption?.trim()) || dateOn;
+export function hasCaption({ caption }) {
+  return !!(caption?.trim());
 }
 
-function buildCaptionParts(caption, dateOn) {
+function buildCaptionParts(caption) {
   const parts = [];
   if (caption?.trim()) parts.push(caption.trim());
-  if (dateOn) parts.push(new Date().toLocaleDateString('de-DE'));
   return parts;
 }
 

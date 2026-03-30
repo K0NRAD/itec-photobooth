@@ -1,19 +1,19 @@
 <script>
   import { onMount } from 'svelte';
   import { settings } from './lib/photoSettings.svelte.js';
-  import { startCamera, stopCamera } from './lib/cameraService.js';
+  import { listCameras, startCameraById, stopCamera } from './lib/cameraService.js';
   import { captureFrame } from './lib/photoCapture.js';
   import { buildLayout } from './lib/layoutBuilder.js';
-  import { exportFlipbook } from './lib/flipbookExporter.js';
   import CameraStage from './components/CameraStage.svelte';
   import ControlPanel from './components/ControlPanel.svelte';
 
   let videoRef = $state(null);
   let stream = $state(null);
   let facing = $state('user');
+  let cameras = $state([]);
+  let selectedCameraId = $state('');
   let status = $state('Bereit.');
   let lastOutput = $state('');
-  let lastFrames = $state([]);
   let isRunning = $state(false);
   let countdown = $state(0);
   let isFlashing = $state(false);
@@ -35,20 +35,25 @@
 
   // ─── Camera ─────────────────────────────────────────────────────────────────
 
-  async function initCamera() {
+  async function initCamera(deviceId = selectedCameraId) {
     try {
       stopCamera(stream);
-      stream = await startCamera(facing);
+      stream = await startCameraById(deviceId || undefined);
+
+      const track = stream.getVideoTracks()[0];
+      facing = track?.getSettings().facingMode ?? 'user';
+      selectedCameraId = track?.getSettings().deviceId ?? '';
+
+      cameras = await listCameras();
       status = 'Bereit.';
     } catch {
       status = 'Kamera blockiert.';
     }
   }
 
-  async function handleSwitchCamera() {
-    facing = facing === 'user' ? 'environment' : 'user';
+  async function handleSelectCamera(deviceId) {
     status = 'Kamera wechseln…';
-    await initCamera();
+    await initCamera(deviceId);
   }
 
   // ─── Photo series ────────────────────────────────────────────────────────────
@@ -116,18 +121,6 @@
     status = 'Download gestartet.';
   }
 
-  async function handleFlipbook() {
-    if (!lastFrames.length) { status = 'Erst eine Serie aufnehmen.'; return; }
-    status = 'Flipbook…';
-    try {
-      const bytes = await exportFlipbook(lastFrames, settings.fps);
-      status = `Fertig (${Math.round(bytes / 1024)} KB).`;
-    } catch (error) {
-      console.error(error);
-      status = 'Flipbook fehlgeschlagen.';
-    }
-  }
-
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 </script>
 
@@ -148,35 +141,29 @@
         mirrorOn={settings.mirrorOn}
         {countdown}
         {isFlashing}
+        {isRunning}
+        {hasOutput}
+        {panelOpen}
+        onStart={handleStart}
+        onRedo={handleRedo}
+        onDownload={handleDownload}
+        onTogglePanel={() => (panelOpen = !panelOpen)}
       />
 
       <div class="drawer" class:open={panelOpen}>
         <div class="drawer-inner">
           <ControlPanel
-            {isRunning}
-            {hasOutput}
-            {status}
-            onStart={handleStart}
-            onRedo={handleRedo}
-            onDownload={handleDownload}
-            onFlipbook={handleFlipbook}
-            onSwitchCamera={handleSwitchCamera}
+            {cameras}
+            {selectedCameraId}
+            onSelectCamera={handleSelectCamera}
           />
         </div>
       </div>
     </div>
-
-    <button
-      class="toggle-btn"
-      class:open={panelOpen}
-      onclick={() => (panelOpen = !panelOpen)}
-      aria-label={panelOpen ? 'Einstellungen schließen' : 'Einstellungen öffnen'}
-    >
-      <span class="toggle-icon"></span>
-    </button>
   </div>
 
   <footer class="footer">
+    <span class="status">{status}</span>
     <span>itec – learn together grow together</span>
   </footer>
 </div>
@@ -208,10 +195,8 @@
 
   /* ── Camera + sliding panel ── */
 
-  /* Extra bottom padding holds space for the toggle button */
   .stage-container {
     position: relative;
-    padding-bottom: 26px;
   }
 
   /* overflow:hidden clips the panel when translated below the camera edge */
@@ -221,17 +206,14 @@
     overflow: hidden;
   }
 
-  /* Panel slides in/out with translateY; clipped by camera-clip */
+  /* Panel slides in/out with translateY; fills the full camera area */
   .drawer {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: 0;
     transform: translateY(100%);
     transition: transform 0.40s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(11, 12, 16, 0.92);
+    background: rgba(11, 12, 16, 0.96);
     backdrop-filter: blur(18px);
-    border-top: 1px solid rgba(255, 255, 255, 0.10);
   }
 
   .drawer.open {
@@ -239,67 +221,18 @@
   }
 
   .drawer-inner {
-    overflow: hidden;
-    padding: 10px 14px 16px;
-  }
-
-  /* ── Round toggle button ── */
-
-  .toggle-btn {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    /* translateX centers the button; translateY keeps it half inside the camera */
-    transform: translateX(-50%);
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: #ffd166;
-    border: 3px solid rgba(11, 12, 16, 0.55);
-    cursor: pointer;
-    z-index: 20;
+    height: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.50);
-    transition: background 0.2s;
+    flex-direction: column;
+    box-sizing: border-box;
+    /* bottom padding: 42px button + 16px gap + 16px breathing room */
+    padding: 10px 14px 74px;
+    overflow: hidden;
   }
-
-  .toggle-btn:hover  { background: #ffe099; }
-  .toggle-btn:active { transform: translateX(-50%) scale(0.93); }
-
-  /* + icon built with ::before / ::after pseudo-elements */
-  .toggle-icon {
-    position: relative;
-    width: 20px;
-    height: 20px;
-  }
-
-  .toggle-icon::before,
-  .toggle-icon::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    margin: auto;
-    width: 18px;
-    height: 2.5px;
-    background: #1b1400;
-    border-radius: 2px;
-    transition: rotate 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* + = horizontal bar + vertical bar (rotated 90°) */
-  .toggle-icon::before { rotate: 0deg; }
-  .toggle-icon::after  { rotate: 90deg; }
-
-  /* × = both bars rotated ±45° */
-  .toggle-btn.open .toggle-icon::before { rotate:  45deg; }
-  .toggle-btn.open .toggle-icon::after  { rotate: -45deg; }
 
   .footer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     margin-top: 10px;
     font-size: 11px;
     color: var(--color-text-muted);

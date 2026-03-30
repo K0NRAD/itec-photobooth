@@ -1,53 +1,42 @@
 <script>
-  import ActionBar from "./ActionBar.svelte";
   import LayoutSettings from "./LayoutSettings.svelte";
   import SliderSettings from "./SliderSettings.svelte";
   import CaptionBar from "./CaptionBar.svelte";
-  import StatusBar from "./StatusBar.svelte";
 
   /**
    * Composes all control sections into a single panel.
    *
-   * @prop {boolean} isRunning
-   * @prop {boolean} hasOutput
-   * @prop {string} status
-   * @prop {() => void} onStart
-   * @prop {() => void} onRedo
-   * @prop {() => void} onDownload
-   * @prop {() => void} onFlipbook
-   * @prop {() => void} onSwitchCamera
+   * @prop {Array<{deviceId: string, label: string}>} cameras
+   * @prop {string} selectedCameraId
+   * @prop {(deviceId: string) => void} onSelectCamera
    */
-  let {
-    isRunning,
-    hasOutput,
-    status,
-    onStart,
-    onRedo,
-    onDownload,
-    onFlipbook,
-    onSwitchCamera,
-  } = $props();
+  let { cameras, selectedCameraId, onSelectCamera } = $props();
 </script>
 
 <div class="controls">
-  <ActionBar
-    {isRunning}
-    {hasOutput}
-    {onStart}
-    {onRedo}
-    {onDownload}
-    {onFlipbook}
-  />
-  <LayoutSettings {onSwitchCamera} />
+  <LayoutSettings {cameras} {selectedCameraId} {onSelectCamera} />
   <SliderSettings />
-  <CaptionBar />
-  <StatusBar message={status} />
+  <div class="caption-wrap">
+    <CaptionBar />
+  </div>
 </div>
 
 <style>
   .controls {
-    display: grid;
-    gap: 10px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 24px;
     padding-top: 10px;
+    min-height: 0;
+  }
+
+  .caption-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 </style>
+
+

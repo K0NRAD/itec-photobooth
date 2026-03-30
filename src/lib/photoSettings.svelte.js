@@ -9,8 +9,6 @@ export const settings = $state({
   bgIntensity: 70,
   themeIntensity: 75,
   gap: 16,
-  fps: 6,
   caption: '',
-  dateOn: true,
   mirrorOn: true,
 });

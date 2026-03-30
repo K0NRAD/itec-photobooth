@@ -1,23 +1,33 @@
 <script>
-  import { settings } from '../lib/photoSettings.svelte.js';
+  import { settings } from "../lib/photoSettings.svelte.js";
 
   /**
-   * All range sliders: shots, countdown, bg intensity, theme intensity, gap, fps.
+   * All range sliders: shots, countdown, bg intensity, gap.
    * Reads and writes directly from/to the shared settings store.
    */
-
-  let isThemeActive = $derived(settings.theme !== 'off');
 </script>
 
 <div class="row">
   <div class="pill">
     <label for="shots">Fotos</label>
-    <input id="shots" type="range" min="2" max="12" bind:value={settings.shots} />
+    <input
+      id="shots"
+      type="range"
+      min="2"
+      max="12"
+      bind:value={settings.shots}
+    />
     <span class="value">{settings.shots}</span>
   </div>
   <div class="pill">
     <label for="timer">Countdown</label>
-    <input id="timer" type="range" min="0" max="8" bind:value={settings.timer} />
+    <input
+      id="timer"
+      type="range"
+      min="0"
+      max="8"
+      bind:value={settings.timer}
+    />
     <span class="value">{settings.timer}</span>
   </div>
 </div>
@@ -25,33 +35,13 @@
 <div class="row">
   <div class="pill">
     <label for="bgIntensity">BG Stärke</label>
-    <input id="bgIntensity" type="range" min="0" max="100" bind:value={settings.bgIntensity} />
+    <input id="bgIntensity" type="range" min="0" max="100"bind:value={settings.bgIntensity}/>
     <span class="value">{settings.bgIntensity}</span>
   </div>
-  <div class="pill" class:disabled={!isThemeActive}>
-    <label for="themeIntensity">Theme Stärke</label>
-    <input
-      id="themeIntensity"
-      type="range"
-      min="0"
-      max="100"
-      bind:value={settings.themeIntensity}
-      disabled={!isThemeActive}
-    />
-    <span class="value">{settings.themeIntensity}</span>
-  </div>
-</div>
-
-<div class="row">
   <div class="pill">
     <label for="gap">Rand/Gap</label>
     <input id="gap" type="range" min="6" max="32" bind:value={settings.gap} />
     <span class="value">{settings.gap}</span>
-  </div>
-  <div class="pill">
-    <label for="fps">FPS</label>
-    <input id="fps" type="range" min="2" max="12" bind:value={settings.fps} />
-    <span class="value">{settings.fps}</span>
   </div>
 </div>
 
@@ -68,13 +58,9 @@
     gap: 10px;
     background: var(--color-btn-secondary);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 10px 12px;
+    padding: 24px 12px;
     border-radius: 14px;
     transition: opacity 0.2s;
-  }
-
-  .pill.disabled {
-    opacity: 0.55;
   }
 
   .pill label {
